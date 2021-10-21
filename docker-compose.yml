@@ -1,0 +1,145 @@
+version: "3"
+
+services:
+
+  db:
+    image: mysql:5.7
+    restart: always
+    container_name: mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - type: volume
+        source: mattermost_database
+        target: /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+  app:
+    image: alissonbarbosa/mattermost:${MM_VERSION}
+    container_name: mattermost_${MM_VERSION}
+    build:
+      context: app
+      # uncomment following lines for team edition or change UID/GID
+      args:
+         - edition=${MATTERMOST_EDITION}
+         - PUID=${PUID}
+         - PGID=${PGID}
+         - MM_VERSION=${MM_VERSION}
+    #image: mattermost/lsd:5.35.5
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: mattermost_config
+        target: /mattermost/config
+      - type: volume
+        source: mattermost_data
+        target: /mattermost/data
+      - type: volume
+        source: mattermost_logs
+        target: /mattermost/logs
+      - type: volume
+        source: mattermost_plugins
+        target: /mattermost/plugins
+      - type: volume
+        source: mattermost_client_plugins
+        target: /mattermost/client/plugins
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      # set same as db credentials and dbname
+      - MM_USERNAME=${MM_USERNAME}
+      - MM_PASSWORD=${MM_PASSWORD}
+      - MM_DBNAME=${MM_DBNAME}
+      - MM_DBHOST=${MM_DBHOST}
+      - MM_DBPORT=${MM_DBPORT}
+      - MM_SQLSETTINGS_DRIVERNAME=$MM_SQLSETTINGS_DRIVERNAME
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - MM_EDITION=${MATTERMOST_EDITION}
+
+      # Database environment variables
+      - DB_USE_SSL=${DB_USE_SSL}
+
+      # Service environment variables
+      - MM_SERVICESETTINGS_SITEURL=${MM_SERVICESETTINGS_SITEURL}
+      - MM_SERVICESETTINGS_LISTENADDRESS=${MM_SERVICESETTINGS_LISTENADDRESS}
+
+      # Team environment variables
+      - MM_TEAMSETTINGS_SITENAME=${MM_TEAMSETTINGS_SITENAME}
+      - MM_TEAMSETTINGS_MAXUSERSPERTEAM=${MM_TEAMSETTINGS_MAXUSERSPERTEAM}
+      - MM_TEAMSETTINGS_RESTRICTCREATIONTODOMAINS=${MM_TEAMSETTINGS_RESTRICTCREATIONTODOMAINS}
+      - MM_TEAMSETTINGS_EXPERIMENTALPRIMARYTEAM=${MM_TEAMSETTINGS_EXPERIMENTALPRIMARYTEAM}
+
+      # Log environment variables
+      - MM_LOGSETTINGS_ENABLECONSOLE=${MM_LOGSETTINGS_ENABLECONSOLE}
+      - MM_LOGSETTINGS_CONSOLELEVEL=${MM_LOGSETTINGS_CONSOLELEVEL}
+
+      # File environment variables
+      - MM_FILESETTINGS_DIRECTORY=${MM_FILESETTINGS_DIRECTORY}
+      - MM_FILESETTINGS_ENABLEPUBLICLINK=${MM_FILESETTINGS_ENABLEPUBLICLINK}
+
+      # Email environment variables
+      - MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS=${MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS}
+      - MM_EMAILSETTINGS_REQUIREEMAILVERIFICATION=${MM_EMAILSETTINGS_REQUIREEMAILVERIFICATION}
+      - MM_EMAILSETTINGS_FEEDBACKNAME=${MM_EMAILSETTINGS_FEEDBACKNAME}
+      - MM_EMAILSETTINGS_FEEDBACKEMAIL=${MM_EMAILSETTINGS_FEEDBACKEMAIL}
+      - MM_EMAILSETTINGS_REPLYTOADDRESS=${MM_EMAILSETTINGS_REPLYTOADDRESS}
+      - MM_EMAILSETTINGS_FEEDBACKORGANIZATION=${MM_EMAILSETTINGS_FEEDBACKORGANIZATION}
+      - MM_EMAILSETTINGS_ENABLESMTPAUTH=${MM_EMAILSETTINGS_ENABLESMTPAUTH}
+      - MM_EMAILSETTINGS_SMTPUSERNAME=${MM_EMAILSETTINGS_SMTPUSERNAME}
+      - MM_EMAILSETTINGS_SMTPPASSWORD=${MM_EMAILSETTINGS_SMTPPASSWORD}
+      - MM_EMAILSETTINGS_SMTPSERVER=${MM_EMAILSETTINGS_SMTPSERVER}
+      - MM_EMAILSETTINGS_SMTPPORT=${MM_EMAILSETTINGS_SMTPPORT}
+      - MM_EMAILSETTINGS_CONNECTIONSECURITY=${MM_EMAILSETTINGS_CONNECTIONSECURITY}
+
+      # Rate limit environment variables
+      - MM_RATELIMITSETTINGS_ENABLE=${MM_RATELIMITSETTINGS_ENABLE}
+
+      # Plugin environment variables
+      - MM_PLUGINSETTINGS_DIRECTORY=${MM_PLUGINSETTINGS_DIRECTORY}
+
+      # use the credentials you've set above, in the format:
+      - MM_SQLSETTINGS_DATASOURCE=${MM_USERNAME}:${MM_PASSWORD}@tcp(${MM_DBHOST}:${MM_DBPORT})/${MM_DBNAME}?charset=utf8mb4,utf8\u0026readTimeout=30s\u0026writeTimeout=30s
+
+      # in case your config is not in default location
+      #- MM_CONFIG=/mattermost/config/config.json
+
+  web:
+    build: web
+    container_name: nginx
+    ports:
+      - "80:8080"
+      - "443:8443"
+    read_only: true
+    restart: unless-stopped
+    volumes:
+      # This directory must have cert files if you want to enable SSL
+      - type: volume
+        source: web_cert
+        target: /cert
+      - /etc/localtime:/etc/localtime:ro
+    cap_drop:
+      - ALL
+volumes:
+  mattermost_database:
+    external: true
+  mattermost_config:
+    external: true
+  mattermost_data:
+    external: true
+  mattermost_logs:
+    external: true
+  mattermost_plugins:
+    external: true
+  mattermost_client_plugins:
+    external: true
+  web_cert:
+    external: true
