@@ -34,7 +34,6 @@ services:
          - PUID=${PUID}
          - PGID=${PGID}
          - MM_VERSION=${MM_VERSION}
-    #image: mattermost/lsd:5.35.5
     restart: unless-stopped
     volumes:
       - type: volume
@@ -126,6 +125,8 @@ services:
         source: web_cert
         target: /cert
       - /etc/localtime:/etc/localtime:ro
+    environment:
+      - MM_VERSION=${MM_VERSION}
     cap_drop:
       - ALL
 volumes:
