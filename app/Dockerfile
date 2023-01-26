@@ -89,8 +89,7 @@ RUN mkdir -p /mattermost/data /mattermost/plugins /mattermost/client/plugins \
 USER mattermost
 
 #Healthcheck to make sure container is ready
-HEALTHCHECK --interval=30s --timeout=10s \
-  CMD curl -f http://localhost:8065/api/v4/system/ping || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:8000 || exit 1
 
 # Configure entrypoint and command
 COPY entrypoint.sh /
