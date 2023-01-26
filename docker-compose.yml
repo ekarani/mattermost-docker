@@ -15,9 +15,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - type: volume
-        source: mattermost_database
-        target: /var/lib/mysql
+      - mattermost_database:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       interval: 5s
@@ -36,21 +34,11 @@ services:
          - MM_VERSION=${MM_VERSION}
     restart: unless-stopped
     volumes:
-      - type: volume
-        source: mattermost_config
-        target: /mattermost/config
-      - type: volume
-        source: mattermost_data
-        target: /mattermost/data
-      - type: volume
-        source: mattermost_logs
-        target: /mattermost/logs
-      - type: volume
-        source: mattermost_plugins
-        target: /mattermost/plugins
-      - type: volume
-        source: mattermost_client_plugins
-        target: /mattermost/client/plugins
+      - mattermost_config:/mattermost/config
+      - mattermost_data:/mattermost/data
+      - mattermost_logs:/mattermost/logs
+      - mattermost_plugins:/mattermost/plugins
+      - mattermost_client_plugins:/mattermost/client/plugins
       - /etc/localtime:/etc/localtime:ro
     environment:
       # set same as db credentials and dbname
